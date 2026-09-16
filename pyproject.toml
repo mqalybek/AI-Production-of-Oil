@@ -14,6 +14,7 @@ dependencies = [
     "scipy>=1.13",
     "pydantic>=2.8",
     "pydantic-settings>=2.4",
+    "pyyaml>=6.0",
 ]
 
 [project.optional-dependencies]
@@ -23,7 +24,7 @@ dev = [
 ]
 
 [tool.setuptools.packages.find]
-include = ["src", "src.*"]
+include = ["src", "src.*", "scripts", "scripts.*"]
 
 [build-system]
 requires = ["setuptools>=68"]

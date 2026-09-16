@@ -57,23 +57,28 @@ def test_well_test_period_must_be_positive(db_session, sample_well):
     db_session.rollback()
 
 
-@pytest.mark.parametrize("water_cut", [-1.0, 100.1])
-def test_well_test_water_cut_must_be_within_0_100(db_session, sample_well, water_cut):
-    db_session.add(
-        WellTest(
-            well_id=sample_well.id,
-            ts_start=_tz(8),
-            ts_end=_tz(12),
-            duration_h=4.0,
-            q_liquid=48.0,
-            q_oil=36.0,
-            q_water=12.0,
-            water_cut=water_cut,
-        )
+def test_well_test_accepts_physically_impossible_raw_values(db_session, sample_well):
+    """well_test — сырые данные ДО валидации: БД не отвергает физически
+    невозможные значения (обводнённость 105%, отрицательный дебит), это
+    сознательное решение (см. ADR в CLAUDE.md) — их должен ловить модуль
+    валидации (src/calc), а не CHECK на уровне БД. is_valid=False и
+    validation_flags — как раз механизм для такой пометки.
+    """
+    test = WellTest(
+        well_id=sample_well.id,
+        ts_start=_tz(8),
+        ts_end=_tz(12),
+        duration_h=4.0,
+        q_liquid=-5.0,
+        q_oil=-5.0,
+        q_water=0.0,
+        water_cut=105.0,
+        is_valid=False,
+        validation_flags={"errors": ["negative_rate", "water_cut_over_100"]},
     )
-    with pytest.raises(IntegrityError):
-        db_session.flush()
-    db_session.rollback()
+    db_session.add(test)
+    db_session.flush()
+    assert test.id is not None
 
 
 def test_daily_production_happy_path(db_session, sample_well):

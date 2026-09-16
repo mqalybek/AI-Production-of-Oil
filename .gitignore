@@ -24,3 +24,7 @@ htmlcov/
 .DS_Store
 Thumbs.db
 *.log
+
+# Синтетические данные — генерируются локально (scripts/generate_synthetic_field.py),
+# не коммитим (сотни МБ на полной конфигурации)
+data/synthetic/*.csv

@@ -39,24 +39,19 @@ class Measurement(Base):
 
 
 class WellTest(Base):
-    """Замер дебита на АГЗУ."""
+    """Замер дебита на АГЗУ.
+
+    Это сырые данные ДО валидации (для этого и есть is_valid/validation_flags),
+    поэтому здесь сознательно нет CHECK на физическую правдоподобность значений
+    (обводнённость 0-100, дебиты >= 0) — датчик или оператор может ввести
+    физически невозможное значение, и задача модуля валидации (src/calc) —
+    это обнаружить и пометить, а не задача БД — отказать в записи. Единственное
+    структурное ограничение — период замера не может быть вывернут наизнанку.
+    """
 
     __tablename__ = "well_test"
     __table_args__ = (
         CheckConstraint("ts_end > ts_start", name="ck_well_test_period"),
-        CheckConstraint("q_liquid >= 0", name="ck_well_test_q_liquid_nonneg"),
-        CheckConstraint("q_oil >= 0", name="ck_well_test_q_oil_nonneg"),
-        CheckConstraint("q_water >= 0", name="ck_well_test_q_water_nonneg"),
-        CheckConstraint(
-            "q_gas IS NULL OR q_gas >= 0", name="ck_well_test_q_gas_nonneg"
-        ),
-        CheckConstraint(
-            "water_cut IS NULL OR water_cut BETWEEN 0 AND 100",
-            name="ck_well_test_water_cut_range",
-        ),
-        CheckConstraint(
-            "gor IS NULL OR gor >= 0", name="ck_well_test_gor_nonneg"
-        ),
         Index("ix_well_test_well_id_ts_start", "well_id", "ts_start"),
     )
 

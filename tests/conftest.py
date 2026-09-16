@@ -22,8 +22,9 @@ TEST_DB_URL = (
     "postgresql+psycopg://monitoring:monitoring@localhost:5432/production_monitoring_test"
 )
 
-# Ревизия, создающая обычные таблицы (до перевода в hypertables) — см. docstring выше.
-PRE_TIMESCALE_REVISION = "af0d9a143175"
+# Ревизия перед переводом в hypertables (создание таблиц + снятие
+# физических CHECK на well_test) — см. docstring выше.
+PRE_TIMESCALE_REVISION = "c871f01a546d"
 
 
 def _run_alembic(*args: str) -> None:
