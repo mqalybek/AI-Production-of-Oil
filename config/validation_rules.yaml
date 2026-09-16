@@ -1,0 +1,52 @@
+# Пороги валидации замеров АГЗУ (src/calc/validation.py). Никаких магических
+# чисел в коде — если порог нужно поменять, меняется этот файл, а не код.
+#
+# Переопределение: default -> overrides.field[<field_id>] -> overrides.well[<well_id>],
+# каждый уровень мержится точечно (можно переопределить один параметр одного
+# правила, остальное наследуется).
+
+default:
+  duration_check:
+    min_hours: 2
+    # "тип АГЗУ" в схеме отдельно не хранится — ближайшее осмысленное
+    # сопоставление: тип узла сбора (gathering_node.node_type)
+    by_node_type:
+      agzu: 2
+      dns: 4
+      gu: 2
+
+  physical_bounds:
+    water_cut_pct: {min: 0, max: 100}
+    gor_m3_t: {min: 0, max: 1000}
+    p_buf_atm: {min: 0, max: 40}
+    p_zatr_atm: {min: 0, max: 40}
+    q_liquid_t_d: {min: 0, max: 2000}
+    q_oil_t_d: {min: 0, max: 1000}
+    q_water_t_d: {min: 0, max: 2000}
+    q_gas_m3_d: {min: 0, max: 200000}
+
+  deviation_from_previous:
+    max_change_pct: 30
+    event_window_days: 3
+
+  water_cut_jump:
+    max_jump_pp: 15
+    event_window_days: 3
+
+  gor_anomaly:
+    max_deviation_pct: 50
+    rolling_window_tests: 5
+
+  material_balance:
+    tolerance_pct: 5
+
+  staleness:
+    max_days_since_last_valid: 14
+
+  telemetry_consistency:
+    min_current_a: 5
+    min_flow_to_expect_current_t_d: 1
+
+overrides:
+  field: {}
+  well: {}
