@@ -1,0 +1,55 @@
+# Пороги детекторов алертов (src/alerts/detectors.py) и настройки жизненного
+# цикла (src/alerts/lifecycle.py). Как и везде — никаких магических чисел в коде.
+
+default:
+  well_stopped:
+    current_threshold_a: 5       # ток ЭЦН ниже этого — считаем "не качает"
+    min_duration_hours: 2        # непрерывно, не разовый провал показания
+    severity: critical
+
+  water_cut_rise:
+    max_jump_pp: 15               # рост обводнённости за окно
+    window_days: 30
+    severity: warning
+
+  gor_rise:
+    max_jump_pct: 50              # рост ГФ за окно, %
+    window_days: 30
+    severity: warning
+
+  pressure_anomaly:
+    window_days: 30               # окно для скользящего среднего/σ
+    sigma_multiplier: 3.0
+    min_points: 10                # меньше точек — коридор не строим
+    severity: warning
+
+  stale_test:
+    max_days_since_last_valid: 14
+    severity: warning
+
+  mtbf_approach:
+    expected_mtbf_days: 550       # ожидаемая наработка на отказ (нет "паспортного" МРП per-насос)
+    warn_fraction: 0.85           # >85% от ожидаемого МРП — алерт
+    severity: warning
+
+  production_drop:
+    max_deviation_pct: 20         # факт ниже потенциала больше чем на это — алерт
+    severity: warning
+
+  data_gap:
+    max_gap_hours: 4
+    severity: warning
+
+  cascade:
+    min_wells: 3                  # столько скважин на одном узле одновременно "встали" -> групповой алерт
+    window_hours: 2                # окно, в котором считаем остановки "одновременными"
+    severity: critical
+
+  lifecycle:
+    quiet_hours_start: "22:00"    # несрочные (non-critical) алерты не шлём в это окно
+    quiet_hours_end: "07:00"
+    snooze_hours: 24               # "Отложить на 24ч"
+
+overrides:
+  field: {}
+  well: {}
