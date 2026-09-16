@@ -6,7 +6,7 @@
 суточных/событийных таблиц).
 
 Revision ID: 0b631d9036f7
-Revises: 1d7678e78ece
+Revises: d690f1e15628
 Create Date: 2026-09-16 18:44:57.765335
 
 """
@@ -17,7 +17,7 @@ from alembic import op
 
 # revision identifiers, used by Alembic.
 revision: str = '0b631d9036f7'
-down_revision: Union[str, Sequence[str], None] = '1d7678e78ece'
+down_revision: Union[str, Sequence[str], None] = 'd690f1e15628'
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
 
