@@ -1,0 +1,26 @@
+# Пороги back-allocation (src/calc/allocation.py). Как и валидация — никаких
+# магических чисел в коде, только здесь.
+#
+# Переопределение: default -> overrides.field[<field_id>] -> overrides.well[<well_id>].
+
+default:
+  max_test_age_days: 14   # старше — замер не используется напрямую, экстраполяция
+
+  confidence_bands:
+    high_max_age_days: 3    # замер свежее 3 суток -> confidence=high
+    medium_max_age_days: 7  # свежее 7 суток -> medium, иначе (до max_test_age_days) -> low
+
+  k_bounds: {min: 0.7, max: 1.3}   # K вне диапазона — применяем всё равно, но флагуем
+
+  ke:
+    current_threshold_a: 5   # телеметрия: ток ниже этого — считаем "насос не качает"
+
+  extrapolation:
+    trend_tests_count: 3   # по скольким последним валидным замерам считать темп падения
+
+  analog:
+    max_age_days: 30   # какие замеры "соседей" по объекту считаются свежими для медианы
+
+overrides:
+  field: {}
+  well: {}

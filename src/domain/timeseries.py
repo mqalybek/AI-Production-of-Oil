@@ -90,6 +90,14 @@ class DailyProduction(Base):
             "hours_on BETWEEN 0 AND 24", name="ck_daily_production_hours_on_range"
         ),
         CheckConstraint("ke BETWEEN 0 AND 1", name="ck_daily_production_ke_range"),
+        CheckConstraint(
+            "allocation_method IS NULL OR allocation_method IN ('measured', 'extrapolated', 'analog')",
+            name="ck_daily_production_allocation_method",
+        ),
+        CheckConstraint(
+            "confidence IS NULL OR confidence IN ('high', 'medium', 'low')",
+            name="ck_daily_production_confidence",
+        ),
     )
 
     well_id: Mapped[int] = mapped_column(ForeignKey("well.id"), primary_key=True)
@@ -100,7 +108,12 @@ class DailyProduction(Base):
     q_gas_m3: Mapped[float | None] = mapped_column()
     hours_on: Mapped[float] = mapped_column()
     ke: Mapped[float] = mapped_column()
-    allocation_factor: Mapped[float | None] = mapped_column()
+    # аллокация ведётся по каждой фазе независимо (нефть/жидкость/вода/газ
+    # могут иметь разные K на одном узле в одни сутки) — поэтому это не
+    # одно число, а {"oil": K, "liquid": K, "water": K, "gas": K}
+    allocation_factor: Mapped[dict | None] = mapped_column(JSONB)
+    allocation_method: Mapped[str | None] = mapped_column()  # measured/extrapolated/analog
+    confidence: Mapped[str | None] = mapped_column()  # high/medium/low
     source: Mapped[str] = mapped_column()
 
 

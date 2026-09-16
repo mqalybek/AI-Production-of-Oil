@@ -5,6 +5,7 @@
 
 import pandas as pd
 import pytest
+from sqlalchemy import text
 
 from scripts.generate_synthetic_field import build_tables
 from scripts.synthetic import writer as synthetic_writer
@@ -23,6 +24,19 @@ def load_tables_into_session(session, tables: dict) -> None:
         records = df.astype(object).where(df.notna(), None).to_dict("records")
         session.execute(sa_table.insert(), records)
     session.flush()
+
+    # таблицы писались с явными id (как в scripts/synthetic/writer.py) —
+    # без этого следующий INSERT через ORM (без явного id) столкнётся с уже
+    # занятым id, т.к. sequence сама не сдвинулась
+    for name in synthetic_writer.TABLES_WITH_EXPLICIT_IDS:
+        if name not in tables:
+            continue
+        session.execute(
+            text(
+                f"SELECT setval(pg_get_serial_sequence('{name}', 'id'), "
+                f"COALESCE((SELECT MAX(id) FROM {name}), 1))"
+            )
+        )
 
 
 @pytest.fixture()
