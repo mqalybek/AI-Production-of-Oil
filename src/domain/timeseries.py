@@ -10,7 +10,7 @@ from __future__ import annotations
 
 import datetime as dt
 
-from sqlalchemy import BigInteger, CheckConstraint, Date, DateTime, ForeignKey, Index, Text
+from sqlalchemy import BigInteger, CheckConstraint, Date, DateTime, ForeignKey, Index, Text, text
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import Mapped, mapped_column
 
@@ -210,3 +210,58 @@ class LabAnalysis(Base):
     gas_composition: Mapped[dict | None] = mapped_column(JSONB)
     lab_name: Mapped[str | None] = mapped_column()
     source: Mapped[str | None] = mapped_column()
+
+
+class DeferredProduction(Base):
+    """Потери добычи = (потенциал − факт) × время, разложенные по причине.
+
+    Натуральный ключ для upsert — два частичных уникальных индекса, а не
+    один UNIQUE(well_id, date, category, reason_id): для category='downtime'
+    reason_id обязателен и может повторяться на разные причины в одни сутки;
+    для остальных трёх категорий reason_id всегда NULL и должна быть ровно
+    одна строка на (well_id, date, category) — обычный UNIQUE с NULL в
+    Postgres этого не гарантирует (NULL не равен NULL для уникальности).
+    """
+
+    __tablename__ = "deferred_production"
+    __table_args__ = (
+        CheckConstraint(
+            "category IN ('downtime', 'rate_reduction', 'watering', 'idle_fund')",
+            name="ck_deferred_production_category",
+        ),
+        CheckConstraint(
+            "(category = 'downtime') = (reason_id IS NOT NULL)",
+            name="ck_deferred_production_reason_matches_category",
+        ),
+        CheckConstraint("volume_oil_t >= 0", name="ck_deferred_production_volume_nonneg"),
+        CheckConstraint(
+            "potential_basis IN ('last_valid_test', 'decline_trend', 'model_forecast')",
+            name="ck_deferred_production_basis",
+        ),
+        Index(
+            "uq_deferred_production_downtime",
+            "well_id",
+            "date",
+            "category",
+            "reason_id",
+            unique=True,
+            postgresql_where=text("reason_id IS NOT NULL"),
+        ),
+        Index(
+            "uq_deferred_production_non_downtime",
+            "well_id",
+            "date",
+            "category",
+            unique=True,
+            postgresql_where=text("reason_id IS NULL"),
+        ),
+        Index("ix_deferred_production_well_id_date", "well_id", "date"),
+    )
+
+    id: Mapped[int] = mapped_column(BigInteger, primary_key=True, autoincrement=True)
+    well_id: Mapped[int] = mapped_column(ForeignKey("well.id"))
+    date: Mapped[dt.date] = mapped_column(Date)
+    category: Mapped[str] = mapped_column()
+    reason_id: Mapped[int | None] = mapped_column(ForeignKey("downtime_reason.id"))
+    volume_oil_t: Mapped[float] = mapped_column()
+    potential_basis: Mapped[str] = mapped_column()

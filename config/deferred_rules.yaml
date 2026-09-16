@@ -1,0 +1,18 @@
+# Пороги расчёта потерь добычи (src/calc/deferred.py). Как и везде — никаких
+# магических чисел в коде.
+
+default:
+  decline_trend:
+    history_months: 9          # окно подгонки Арпса (6-12 мес факта)
+    min_points: 10              # меньше точек — подгонка не имеет смысла, сразу откат
+    r2_threshold: 0.5           # хуже — откат на экспоненту, затем на last_valid_test
+    b_bounds: {min: 0.0, max: 1.2}
+    di_min: 0.0001              # Di > 0, но не совсем ноль (численная устойчивость)
+
+  idle_fund:
+    statuses: ["idle", "mothballed"]   # какие well.status считаются "неотработанным фондом"
+    max_potential_age_days: 180        # старше — потенциал слишком ненадёжен, пропускаем скважину
+
+overrides:
+  field: {}
+  well: {}

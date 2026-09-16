@@ -24,8 +24,9 @@ TEST_DB_URL = (
 
 # Ревизия перед переводом в hypertables (создание таблиц, снятие физических
 # CHECK на well_test, таблицы ingestion_run/ingestion_quarantine,
-# allocation_method/confidence в daily_production) — см. docstring выше.
-PRE_TIMESCALE_REVISION = "98ac2912cfae"
+# allocation_method/confidence в daily_production, таблица
+# deferred_production) — см. docstring выше.
+PRE_TIMESCALE_REVISION = "f532bf462c39"
 
 
 def _run_alembic(*args: str) -> None:
