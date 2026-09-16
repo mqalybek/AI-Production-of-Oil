@@ -113,7 +113,43 @@ docker/         — Docker-related файлы (Dockerfile, init-скрипты �
 Последствия: ...
 ```
 
-_(записей пока нет — проект в стадии planning/setup)_
+### 2026-09-16: Схема БД слоя данных
+
+Контекст: нужно спроектировать мастер-данные, справочники и таймсерии
+для сбора/валидации/аллокации добычи, с разделением на обычные таблицы
+PostgreSQL и TimescaleDB hypertables.
+
+Решение:
+- 18 таблиц: 8 мастер-данных (`field`, `reservoir`, `well`, `well_alias`,
+  `completion`, `equipment`, `gathering_node`,
+  `well_gathering_node_history`), 3 справочника-сида (`downtime_reason`
+  — иерархический через `parent_id`, `gtm_type`, `measurement_tag`),
+  7 hypertables (`measurement`, `well_test`, `daily_production`,
+  `node_production`, `downtime`, `gtm_event`, `lab_analysis`).
+- Перечисляемые поля (`well_type`, `status`, `equipment_type` и т.д.) —
+  `VARCHAR + CHECK`, а не native Postgres `ENUM`: добавление нового
+  значения делается обычной миграцией `ALTER TABLE ADD CONSTRAINT`, без
+  блокировок `ALTER TYPE`.
+- `well_gathering_node_history` — отдельная таблица истории привязки
+  скважины к узлу сбора (`valid_from`/`valid_to`), т.к. скважину могут
+  перевести на другой узел, а история переводов нужна для аллокации
+  задним числом.
+- Партиционный столбец времени у каждой hypertable — часть PK (требование
+  TimescaleDB). Чанки: 1 день для `measurement` (плотная телеметрия),
+  1 месяц — для остальных таймсерий.
+- Сжатие TimescaleDB — только для `measurement` (данные старше 30 дней,
+  `compress_segmentby = well_id, tag_id`).
+- Три Alembic-миграции: (1) `CREATE EXTENSION timescaledb`,
+  (2) создание всех обычных таблиц (автосгенерирована из моделей,
+  проверена на локальном PostgreSQL), (3) `create_hypertable` +
+  политика сжатия (не проверена в этой среде — TimescaleDB недоступна
+  без Docker Hub, см. "Не делать / ограничения окружения" ниже).
+
+Последствия: изменение состава допустимых значений CHECK-полей — это
+всегда новая миграция с `ALTER TABLE ... DROP CONSTRAINT` +
+`ADD CONSTRAINT`, а не правка enum на уровне БД.
+
+_(предыдущих записей нет — проект в стадии planning/setup)_
 
 ## Не делать
 
