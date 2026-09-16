@@ -1,0 +1,30 @@
+.loss-analysis {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.loss-analysis__controls {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  font-size: 12.5px;
+}
+
+.loss-analysis__controls input {
+  padding: 5px 8px;
+  border: 1px solid var(--color-border-strong);
+  border-radius: var(--radius-sm);
+  margin-left: 4px;
+}
+
+.loss-analysis__total {
+  font-weight: 600;
+  color: var(--color-text-muted);
+}
+
+.loss-analysis__row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}

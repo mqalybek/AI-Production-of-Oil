@@ -28,3 +28,8 @@ Thumbs.db
 # Синтетические данные — генерируются локально (scripts/generate_synthetic_field.py),
 # не коммитим (сотни МБ на полной конфигурации)
 data/synthetic/*.csv
+
+# Frontend (frontend/)
+frontend/node_modules/
+frontend/dist/
+frontend/.vite/

@@ -1,0 +1,99 @@
+.morning {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  height: 100%;
+}
+
+.morning__kpis {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 12px;
+}
+
+.morning__row {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 12px;
+  flex: 1;
+  min-height: 0;
+}
+
+.morning__panel {
+  max-height: 360px;
+}
+
+.morning__trend {
+  flex-shrink: 0;
+}
+
+.morning__empty {
+  color: var(--color-text-faint);
+  padding: 8px 2px;
+}
+
+.morning__list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.morning__list-item {
+  padding: 7px 6px;
+  border-radius: var(--radius-sm);
+  border-bottom: 1px solid var(--color-border);
+}
+
+.morning__list-item:last-child {
+  border-bottom: none;
+}
+
+.morning__list-item:not(.morning__list-item--static) {
+  cursor: pointer;
+}
+
+.morning__list-item:not(.morning__list-item--static):hover {
+  background: var(--color-bg);
+}
+
+.morning__list-title {
+  font-weight: 600;
+  font-size: 12.5px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.morning__list-sub {
+  color: var(--color-text-muted);
+  font-size: 12px;
+  margin-top: 2px;
+}
+
+.morning__list-meta {
+  color: var(--color-text-faint);
+  font-size: 11px;
+  margin-top: 2px;
+}
+
+.morning__loss-bar {
+  height: 5px;
+  background: var(--color-bg);
+  border-radius: 3px;
+  overflow: hidden;
+  margin-top: 5px;
+}
+
+.morning__loss-bar-fill {
+  height: 100%;
+  background: var(--color-primary);
+}
+
+.morning__caption {
+  text-align: right;
+  color: var(--color-text-faint);
+  font-size: 11px;
+}

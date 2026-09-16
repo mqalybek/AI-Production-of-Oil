@@ -1,0 +1,29 @@
+.data-quality {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.data-quality__controls {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 12.5px;
+}
+
+.data-quality__controls input {
+  padding: 5px 8px;
+  border: 1px solid var(--color-border-strong);
+  border-radius: var(--radius-sm);
+  margin-left: 4px;
+}
+
+.data-quality__period {
+  color: var(--color-text-muted);
+}
+
+.data-quality__grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 12px;
+}
