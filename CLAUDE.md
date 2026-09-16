@@ -206,6 +206,43 @@ CHECK остаются к месту.
 `scripts/synthetic/catalogs.py` нужно синхронизировать со
 справочниками, которые заведёт будущий реальный ingestion.
 
+### 2026-09-16: Слой загрузки (src/ingestion) — пишет в measurement, не в daily_production
+
+Контекст: нужна плагинная архитектура источников данных (CSV/Excel
+рапорты, синтетика, будущий OPC UA) с единым внутренним форматом и
+идемпотентной загрузкой.
+
+Решение:
+- Натуральный ключ upsert `(well_id, ts, tag)` — это PK таблицы
+  `measurement`, не `daily_production` (`(well_id, date)`, без tag).
+  Поэтому ingestion **всегда** пишет в `measurement` (сырой слой),
+  независимо от источника: и суточный CSV-рапорт, и будущая телеметрия
+  OPC UA превращаются в записи вида `(скважина, время, тег, значение)`.
+  `daily_production` — результат будущей аллокации (src/calc), ingestion
+  её не трогает.
+- Справочник `measurement_tag` расширен тегами суточного рапорта
+  (`q_oil_daily`, `q_liquid_daily`, `q_water_daily`, `q_gas_daily`,
+  `hours_on_daily`) — перенесён в `src/domain/catalogs.py` (был только в
+  `scripts/synthetic/`), т.к. это теперь core-справочник приложения, а
+  не только для синтетики.
+- `DataSource` (ABC): `read(period)`, `validate_schema()`,
+  `get_metadata()`. Реализации: `CsvSource` (CSV/Excel, гибкий
+  YAML-маппинг колонок, многострочные шапки и объединённые ячейки в
+  Excel через ручной разворот `openpyxl.merged_cells`), `SyntheticSource`
+  (читает CSV генератора как будто это внешний фид — "разрешает"
+  well_id/tag_id обратно в внешние коды через well_alias/measurement_tag,
+  чтобы пройти тот же путь резолюции, что и настоящий источник),
+  `OpcUaSource` (только структура, TODO).
+- Источник никогда не пропускает нечитаемую строку молча — либо
+  `RawRecord` с `parse_error`, либо (для целого файла) `SourceValidationError`.
+  Обе ветки уходят в `ingestion_quarantine`/`ingestion_run.status=failed`.
+- Upsert через `INSERT ... ON CONFLICT (well_id, ts, tag_id) DO UPDATE`
+  (SQLAlchemy Core) — идемпотентность без дублей при повторной загрузке.
+
+Последствия: если позже понадобится, чтобы CSV-рапорт писал сразу в
+`daily_production` (минуя допущение "сначала сырьё, потом аллокация") —
+это отдельное решение, ingestion сейчас на это не рассчитан.
+
 _(предыдущих записей нет — проект в стадии planning/setup)_
 
 ## Не делать

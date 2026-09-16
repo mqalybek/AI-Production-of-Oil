@@ -24,9 +24,10 @@ import numpy as np
 REPO_ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(REPO_ROOT))
 
-from scripts.synthetic import catalogs, dirty, events, master_data, simulate, writer  # noqa: E402
+from scripts.synthetic import dirty, events, master_data, simulate, writer  # noqa: E402
 from scripts.synthetic.config import SyntheticConfig, load_config  # noqa: E402
 from src.domain.base import engine  # noqa: E402
+from src.domain.catalogs import build_reference_tables  # noqa: E402
 
 
 def build_tables(cfg: SyntheticConfig, rng: np.random.Generator) -> dict[str, object]:
@@ -35,7 +36,7 @@ def build_tables(cfg: SyntheticConfig, rng: np.random.Generator) -> dict[str, ob
     Вынесено отдельно от main(), чтобы тесты могли сгенерировать данные и
     проверить их, не проходя через CLI и не трогая диск/БД.
     """
-    ref_tables, ref = catalogs.build_reference_tables()
+    ref_tables, ref = build_reference_tables()
     master = master_data.build_master_data(cfg, rng)
     ev = events.build_events(cfg, rng, master, ref)
 

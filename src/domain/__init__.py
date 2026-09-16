@@ -3,6 +3,6 @@
 """
 
 from src.domain.base import Base
-from src.domain import master_data, reference, timeseries  # noqa: F401
+from src.domain import ingestion_log, master_data, reference, timeseries  # noqa: F401
 
 __all__ = ["Base"]

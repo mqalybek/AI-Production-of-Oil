@@ -14,7 +14,7 @@ import datetime as dt
 import numpy as np
 import pandas as pd
 
-from scripts.synthetic.catalogs import ReferenceIds
+from src.domain.catalogs import ReferenceIds
 from scripts.synthetic.config import SyntheticConfig
 from scripts.synthetic.decline import arps_hyperbolic_rate, logistic_curve, sample_lognormal_range
 from scripts.synthetic.events import EventsResult

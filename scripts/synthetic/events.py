@@ -13,8 +13,8 @@ from dataclasses import dataclass
 import numpy as np
 
 from scripts.synthetic.config import SyntheticConfig
-from scripts.synthetic.catalogs import GTM_TYPES, ReferenceIds
 from scripts.synthetic.master_data import MasterData
+from src.domain.catalogs import GTM_TYPES, ReferenceIds
 
 _GTM_TYPE_NAMES = {code: name for code, name in GTM_TYPES}
 
