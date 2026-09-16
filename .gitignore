@@ -1,0 +1,26 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.eggs/
+build/
+dist/
+.venv/
+venv/
+
+# Тестирование
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Переменные окружения / секреты
+.env
+
+# Редакторы
+.vscode/
+.idea/
+
+# Системный мусор
+.DS_Store
+Thumbs.db
+*.log
