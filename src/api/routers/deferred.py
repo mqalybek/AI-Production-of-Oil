@@ -25,13 +25,15 @@ def get_deferred(
     to: dt.date = Query(...),
     groupby: str = Query("well", description="well|node|reservoir|field|reason"),
     granularity: str = Query("day", description="день/неделя/месяц/ytd — только для groupby != reason"),
+    well: int | None = Query(None, description="ограничить одной скважиной (карточка скважины)"),
     db: Session = Depends(get_db),
 ):
     period = Period(from_, to)
-    cache_key = f"deferred:{from_}:{to}:{groupby}:{granularity}"
+    well_ids = [well] if well is not None else None
+    cache_key = f"deferred:{from_}:{to}:{groupby}:{granularity}:{well}"
 
     if groupby == "reason":
-        rows = cache.get_or_set(cache_key, lambda: pareto_by_reason(db, period))
+        rows = cache.get_or_set(cache_key, lambda: pareto_by_reason(db, period, well_ids=well_ids))
         reason_names = {
             r.id: r.name for r in db.execute(select(DowntimeReason)).scalars().all()
         }
@@ -49,7 +51,8 @@ def get_deferred(
 
     try:
         rows = cache.get_or_set(
-            cache_key, lambda: aggregate_losses(db, period, group_by=groupby, time_bucket=granularity)
+            cache_key,
+            lambda: aggregate_losses(db, period, group_by=groupby, time_bucket=granularity, well_ids=well_ids),
         )
     except ValueError as exc:
         raise HTTPException(status_code=422, detail=str(exc)) from exc
