@@ -26,8 +26,8 @@ TEST_DB_URL = (
 # CHECK на well_test, таблицы ingestion_run/ingestion_quarantine,
 # allocation_method/confidence в daily_production, таблица
 # deferred_production, таблицы alert/alert_subscriber, api_user/production_plan,
-# monthly_production) — см. docstring выше.
-PRE_TIMESCALE_REVISION = "70a31ee88f65"
+# monthly_production, reservoir.oil_density_t_m3) — см. docstring выше.
+PRE_TIMESCALE_REVISION = "72f01ed19544"
 
 
 def _run_alembic(*args: str) -> None:

@@ -30,7 +30,14 @@ class Field(Base):
 
 
 class Reservoir(Base):
-    """Объект разработки / горизонт месторождения."""
+    """Объект разработки / горизонт месторождения.
+
+    oil_density_t_m3 — плотность нефти, справочное значение по горизонту
+    (свойство пласта, не меняется от скважины к скважине или от суток к
+    суткам). Задаётся вручную (см. scripts/set_reservoir_density.py) и
+    используется при загрузке источников, которые дают объёмный дебит
+    без своей плотности — перевести м3 в тонны тогда больше не из чего.
+    """
 
     __tablename__ = "reservoir"
     __table_args__ = (UniqueConstraint("field_id", "name", name="uq_reservoir_field_name"),)
@@ -39,6 +46,7 @@ class Reservoir(Base):
     field_id: Mapped[int] = mapped_column(ForeignKey("field.id"))
     name: Mapped[str] = mapped_column()
     horizon_code: Mapped[str | None] = mapped_column()
+    oil_density_t_m3: Mapped[float | None] = mapped_column()
 
 
 class Well(Base):
