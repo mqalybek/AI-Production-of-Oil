@@ -6,12 +6,14 @@ import type {
   DeferredAggregateItem,
   DeferredParetoItem,
   FieldOut,
+  MonthlyProductionOut,
   Page,
   ProductionSummaryPoint,
   WellCardData,
   WellEvent,
   DailyProductionOut,
   WellListItem,
+  WellMonthlySummaryOut,
   WellTestOut,
   TelemetryPoint,
 } from './types'
@@ -46,6 +48,18 @@ export function getWellTelemetry(uwi: string, from: string, to: string, tags?: s
 
 export function getWellEvents(uwi: string, from?: string, to?: string) {
   return api.get<WellEvent[]>(`/api/wells/${uwi}/events`, { from, to })
+}
+
+export function getWellMonthlyProduction(uwi: string, from?: string, to?: string) {
+  return api.get<MonthlyProductionOut[]>(`/api/wells/${uwi}/monthly-production`, { from, to })
+}
+
+export function getWellMonthlySummary(uwi: string) {
+  return api.get<WellMonthlySummaryOut | null>(`/api/wells/${uwi}/monthly-summary`)
+}
+
+export function getMonthlySummaries(params: { field?: number; limit?: number; offset?: number } = {}) {
+  return api.get<Page<WellMonthlySummaryOut>>('/api/monthly-production/wells', params)
 }
 
 export function getDailySummary(date: string, field?: number) {

@@ -16,14 +16,18 @@ from src.api.schemas.wells import (
     CompletionOut,
     DailyProductionOut,
     EquipmentOut,
+    MonthlyProductionOut,
     TelemetryPoint,
     WellCard,
     WellEvent,
     WellListItem,
+    WellMonthlySummaryOut,
     WellTestOut,
 )
 from src.api.utils import bucket_date, paginate
+from src.calc.monthly_analysis_runner import get_well_summary
 from src.domain.master_data import Completion, Equipment, Well
+from src.domain.monthly_production import MonthlyProduction
 from src.domain.reference import GtmType, MeasurementTag
 from src.domain.timeseries import DailyProduction, Downtime, GtmEvent, Measurement, WellTest
 
@@ -124,6 +128,34 @@ def get_well_production(
             )
         )
     return result
+
+
+@router.get("/{uwi}/monthly-production", response_model=list[MonthlyProductionOut])
+def get_well_monthly_production(
+    uwi: str,
+    from_: dt.date | None = Query(None, alias="from"),
+    to: dt.date | None = Query(None),
+    db: Session = Depends(get_db),
+) -> list[MonthlyProductionOut]:
+    well = _get_well_or_404(db, uwi)
+    q = select(MonthlyProduction).where(MonthlyProduction.well_id == well.id)
+    if from_ is not None:
+        q = q.where(MonthlyProduction.period_month >= from_.replace(day=1))
+    if to is not None:
+        q = q.where(MonthlyProduction.period_month <= to)
+    q = q.order_by(MonthlyProduction.period_month)
+
+    rows = db.execute(q).scalars().all()
+    return [MonthlyProductionOut.model_validate(r) for r in rows]
+
+
+@router.get("/{uwi}/monthly-summary", response_model=WellMonthlySummaryOut | None)
+def get_well_monthly_summary(uwi: str, db: Session = Depends(get_db)) -> WellMonthlySummaryOut | None:
+    well = _get_well_or_404(db, uwi)
+    summary = get_well_summary(db, well.id)
+    if summary is None:
+        return None
+    return WellMonthlySummaryOut(uwi=well.uwi, **summary.__dict__)
 
 
 @router.get("/{uwi}/tests", response_model=Page[WellTestOut])
