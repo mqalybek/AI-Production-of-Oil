@@ -11,7 +11,11 @@ class ReservoirOut(BaseModel):
     name: str
     horizon_code: str | None
     oil_density_t_m3: float | None
+    water_density_t_m3: float | None
+    density_confirmed: bool
 
 
 class ReservoirDensityUpdate(BaseModel):
-    oil_density_t_m3: float
+    oil_density_t_m3: float | None = None
+    water_density_t_m3: float | None = None
+    density_confirmed: bool | None = None

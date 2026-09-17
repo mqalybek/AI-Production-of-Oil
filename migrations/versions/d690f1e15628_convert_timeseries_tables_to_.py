@@ -1,7 +1,7 @@
 """convert timeseries tables to timescaledb hypertables
 
 Revision ID: d690f1e15628
-Revises: 72f01ed19544
+Revises: ee1a92606236
 Create Date: 2026-09-16 11:31:20.811594
 
 """
@@ -12,7 +12,7 @@ from alembic import op
 
 # revision identifiers, used by Alembic.
 revision: str = 'd690f1e15628'
-down_revision: Union[str, Sequence[str], None] = '72f01ed19544'
+down_revision: Union[str, Sequence[str], None] = 'ee1a92606236'
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
 
