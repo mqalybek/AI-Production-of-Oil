@@ -1,5 +1,6 @@
 import datetime as dt
 
+from src.domain.monthly_production import MonthlyProduction
 from src.domain.timeseries import DailyProduction, WellTest
 
 
@@ -70,6 +71,52 @@ def test_well_production_month_granularity_sums(client, auth_headers, db_session
     body = resp.json()
     assert len(body) == 1
     assert body[0]["q_oil_t"] == 30.0
+
+
+def test_well_monthly_production_returns_rows_in_order(client, auth_headers, db_session, make_well):
+    well = make_well()
+    for month, q_oil in [(2, 120.0), (1, 100.0)]:
+        db_session.add(
+            MonthlyProduction(
+                well_id=well.id, period_month=dt.date(2024, month, 1), calendar_days=30, working_days=28,
+                q_oil_t=q_oil, q_water_t=20.0, q_liquid_t=q_oil + 20.0, source="test",
+            )
+        )
+    db_session.flush()
+
+    resp = client.get(f"/api/wells/{well.uwi}/monthly-production", headers=auth_headers)
+    assert resp.status_code == 200
+    body = resp.json()
+    assert len(body) == 2
+    assert body[0]["period_month"] == "2024-01-01"
+    assert body[1]["period_month"] == "2024-02-01"
+
+
+def test_well_monthly_summary_computes_delta(client, auth_headers, db_session, make_well):
+    well = make_well()
+    for month, q_oil in [(1, 100.0), (2, 120.0)]:
+        db_session.add(
+            MonthlyProduction(
+                well_id=well.id, period_month=dt.date(2024, month, 1), calendar_days=30, working_days=28,
+                q_oil_t=q_oil, q_water_t=20.0, q_liquid_t=q_oil + 20.0, source="test",
+            )
+        )
+    db_session.flush()
+
+    resp = client.get(f"/api/wells/{well.uwi}/monthly-summary", headers=auth_headers)
+    assert resp.status_code == 200
+    body = resp.json()
+    assert body["uwi"] == well.uwi
+    assert body["q_oil_t"] == 120.0
+    assert body["delta_oil_t"] == 20.0
+    assert body["months_count"] == 2
+
+
+def test_well_monthly_summary_null_when_no_data(client, auth_headers, make_well):
+    well = make_well()
+    resp = client.get(f"/api/wells/{well.uwi}/monthly-summary", headers=auth_headers)
+    assert resp.status_code == 200
+    assert resp.json() is None
 
 
 def test_well_tests_endpoint_paginates(client, auth_headers, db_session, make_well):

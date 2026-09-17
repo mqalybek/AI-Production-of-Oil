@@ -48,6 +48,10 @@
   grid-row: 2 / 3;
 }
 
+.well-card__monthly {
+  grid-column: 1 / 4;
+}
+
 .well-card__dl {
   display: grid;
   grid-template-columns: auto 1fr;

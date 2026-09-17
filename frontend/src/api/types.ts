@@ -148,6 +148,33 @@ export interface AlertOut {
   snoozed_until: string | null
 }
 
+export interface MonthlyProductionOut {
+  period_month: string
+  calendar_days: number
+  working_days: number
+  q_oil_t: number
+  q_water_t: number
+  q_gas_m3: number | null
+  q_liquid_t: number
+  gor: number | null
+  water_cut_pct: number | null
+  q_oil_rate_t_d: number | null
+}
+
+export interface WellMonthlySummaryOut {
+  well_id: number
+  uwi: string | null
+  last_period: string
+  q_oil_t: number
+  q_oil_rate_t_d: number | null
+  water_cut_pct: number | null
+  prev_q_oil_t: number | null
+  delta_oil_t: number | null
+  delta_oil_pct: number | null
+  cumulative_oil_t: number
+  months_count: number
+}
+
 export interface DataQualityMetrics {
   period_start: string
   period_end: string

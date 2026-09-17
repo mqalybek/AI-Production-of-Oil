@@ -6,6 +6,8 @@ import {
   getDeferred,
   getWellCard,
   getWellEvents,
+  getWellMonthlyProduction,
+  getWellMonthlySummary,
   getWellProduction,
   getWellTelemetry,
   getWellTests,
@@ -58,6 +60,14 @@ export function WellCardPage() {
   })
   const events = useQuery({ queryKey: ['well-events', uwi, from90], queryFn: () => getWellEvents(uwi, from90, to) })
   const tests = useQuery({ queryKey: ['well-tests', uwi], queryFn: () => getWellTests(uwi, { limit: 50 }) })
+  const monthlyProduction = useQuery({
+    queryKey: ['well-monthly-production', uwi],
+    queryFn: () => getWellMonthlyProduction(uwi),
+  })
+  const monthlySummary = useQuery({
+    queryKey: ['well-monthly-summary', uwi],
+    queryFn: () => getWellMonthlySummary(uwi),
+  })
   const losses = useQuery({
     queryKey: ['well-losses', uwi, card.data?.id],
     queryFn: () => getDeferred(from90, to, 'well', 'day') as Promise<DeferredAggregateItem[]>,
@@ -108,6 +118,32 @@ export function WellCardPage() {
     } as echarts.EChartsOption
   }, [telemetry.data])
 
+  const monthlyProductionOption = useMemo(() => {
+    const rows = monthlyProduction.data ?? []
+    return {
+      grid: { left: 44, right: 44, top: 24, bottom: 24 },
+      legend: { top: 0, textStyle: { fontSize: 11 } },
+      tooltip: { trigger: 'axis' },
+      xAxis: { type: 'category', data: rows.map((r) => r.period_month), axisLabel: { formatter: (v: string) => v.slice(0, 7) } },
+      yAxis: [
+        { type: 'value', name: 'т/мес', position: 'left' },
+        { type: 'value', name: '% воды', position: 'right', min: 0, max: 100 },
+      ],
+      series: [
+        { name: 'Qж', type: 'line', data: rows.map((r) => r.q_liquid_t), smooth: true },
+        { name: 'Qн', type: 'line', data: rows.map((r) => r.q_oil_t), smooth: true },
+        {
+          name: 'Обводнённость',
+          type: 'line',
+          yAxisIndex: 1,
+          data: rows.map((r) => r.water_cut_pct),
+          smooth: true,
+          lineStyle: { type: 'dashed' },
+        },
+      ],
+    } as echarts.EChartsOption
+  }, [monthlyProduction.data])
+
   const wellLosses = useMemo(
     () => (losses.data ?? []).filter((l) => l.group === card.data?.id),
     [losses.data, card.data],
@@ -154,6 +190,24 @@ export function WellCardPage() {
             <dd>{well.spud_date ? formatDate(well.spud_date) : '—'}</dd>
             <dt>Потери за 90 сут</dt>
             <dd>{formatNumber(totalLoss)} т</dd>
+            {monthlySummary.data && (
+              <>
+                <dt>Дебит нефти (посл. мес.)</dt>
+                <dd>
+                  {monthlySummary.data.q_oil_rate_t_d !== null ? `${formatNumber(monthlySummary.data.q_oil_rate_t_d)} т/сут` : '—'}
+                </dd>
+                <dt>Обводнённость (посл. мес.)</dt>
+                <dd>{monthlySummary.data.water_cut_pct !== null ? `${formatNumber(monthlySummary.data.water_cut_pct)} %` : '—'}</dd>
+                <dt>Дельта к пред. месяцу</dt>
+                <dd>
+                  {monthlySummary.data.delta_oil_pct !== null
+                    ? `${monthlySummary.data.delta_oil_pct > 0 ? '+' : ''}${formatNumber(monthlySummary.data.delta_oil_pct, 0)} %`
+                    : '—'}
+                </dd>
+                <dt>Накопленная добыча</dt>
+                <dd>{formatNumber(monthlySummary.data.cumulative_oil_t, 0)} т</dd>
+              </>
+            )}
           </dl>
 
           <div className="well-card__subtitle">Оборудование</div>
@@ -234,6 +288,16 @@ export function WellCardPage() {
                 ))}
               </tbody>
             </table>
+          </QueryState>
+        </Panel>
+
+        <Panel title="Помесячная добыча: Qж / Qн / обводнённость" className="well-card__monthly">
+          <QueryState isLoading={monthlyProduction.isLoading} error={monthlyProduction.error}>
+            {(monthlyProduction.data ?? []).length === 0 ? (
+              <div className="well-card__list-empty">Помесячных данных нет</div>
+            ) : (
+              <Chart option={monthlyProductionOption} height={200} />
+            )}
           </QueryState>
         </Panel>
       </div>

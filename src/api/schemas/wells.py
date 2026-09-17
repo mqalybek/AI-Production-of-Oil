@@ -107,3 +107,32 @@ class WellEvent(BaseModel):
     date: dt.date
     title: str
     detail: str | None = None
+
+
+class MonthlyProductionOut(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    period_month: dt.date
+    calendar_days: int
+    working_days: int
+    q_oil_t: float
+    q_water_t: float
+    q_gas_m3: float | None
+    q_liquid_t: float
+    gor: float | None
+    water_cut_pct: float | None
+    q_oil_rate_t_d: float | None
+
+
+class WellMonthlySummaryOut(BaseModel):
+    well_id: int
+    uwi: str | None = None
+    last_period: dt.date
+    q_oil_t: float
+    q_oil_rate_t_d: float | None
+    water_cut_pct: float | None
+    prev_q_oil_t: float | None
+    delta_oil_t: float | None
+    delta_oil_pct: float | None
+    cumulative_oil_t: float
+    months_count: int
