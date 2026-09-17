@@ -1,11 +1,15 @@
-"""Задать/поменять плотность нефти для объекта/горизонта.
+"""Задать/поменять плотность нефти и воды для объекта/горизонта, подтвердить
+её по ФХИ.
 
 Плотность — справочное свойство пласта (одно значение на горизонт, не на
 скважину и не на сутки), используется загрузчиками источников, которые
 дают объёмный дебит без своей плотности, чтобы перевести м3 в тонны.
+density_confirmed=False по умолчанию (в т.ч. если стоит дефолт 0.86/1.0,
+не введённый вручную) — загрузчик суточных данных обязан предупреждать,
+пока не подтверждено явно (--confirm).
 
 Примеры:
-    python scripts/set_reservoir_density.py --field "Синтетическое" --reservoir "I" --density 0.86
+    python scripts/set_reservoir_density.py --field "Синтетическое" --reservoir "I" --oil-density 0.86 --water-density 1.0 --confirm
     python scripts/set_reservoir_density.py --list --field "Синтетическое"
 """
 
@@ -23,7 +27,9 @@ def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument("--field", required=True, help="название месторождения")
     parser.add_argument("--reservoir", help="название объекта/горизонта (reservoir.name)")
-    parser.add_argument("--density", type=float, help="плотность нефти, т/м3")
+    parser.add_argument("--oil-density", type=float, help="плотность нефти, т/м3")
+    parser.add_argument("--water-density", type=float, help="плотность воды, т/м3")
+    parser.add_argument("--confirm", action="store_true", help="пометить плотность как подтверждённую по ФХИ")
     parser.add_argument("--list", action="store_true", help="показать текущие значения и выйти")
     args = parser.parse_args()
 
@@ -35,11 +41,15 @@ def main() -> None:
         if args.list:
             reservoirs = session.execute(select(Reservoir).where(Reservoir.field_id == field.id)).scalars().all()
             for r in reservoirs:
-                print(f"{r.name!r} (горизонт {r.horizon_code!r}): {r.oil_density_t_m3}")
+                confirmed = "подтверждена" if r.density_confirmed else "НЕ подтверждена"
+                print(f"{r.name!r} (горизонт {r.horizon_code!r}): нефть={r.oil_density_t_m3}, вода={r.water_density_t_m3} — {confirmed}")
             return
 
-        if not args.reservoir or args.density is None:
-            raise SystemExit("для установки плотности нужны --reservoir и --density (или используйте --list)")
+        if not args.reservoir or (args.oil_density is None and args.water_density is None and not args.confirm):
+            raise SystemExit(
+                "для установки плотности нужны --reservoir и хотя бы одно из "
+                "--oil-density/--water-density/--confirm (или используйте --list)"
+            )
 
         reservoir = session.execute(
             select(Reservoir).where(Reservoir.field_id == field.id, Reservoir.name == args.reservoir)
@@ -47,9 +57,19 @@ def main() -> None:
         if reservoir is None:
             raise SystemExit(f"объект/горизонт {args.reservoir!r} не найден на месторождении {args.field!r}")
 
-        reservoir.oil_density_t_m3 = args.density
+        if args.oil_density is not None:
+            reservoir.oil_density_t_m3 = args.oil_density
+        if args.water_density is not None:
+            reservoir.water_density_t_m3 = args.water_density
+        if args.confirm:
+            reservoir.density_confirmed = True
+
         session.commit()
-        print(f"плотность {args.reservoir!r} на {args.field!r} установлена: {args.density} т/м3")
+        confirmed = "подтверждена" if reservoir.density_confirmed else "не подтверждена"
+        print(
+            f"{args.reservoir!r} на {args.field!r}: "
+            f"нефть={reservoir.oil_density_t_m3}, вода={reservoir.water_density_t_m3} ({confirmed})"
+        )
 
 
 if __name__ == "__main__":

@@ -32,11 +32,16 @@ class Field(Base):
 class Reservoir(Base):
     """Объект разработки / горизонт месторождения.
 
-    oil_density_t_m3 — плотность нефти, справочное значение по горизонту
-    (свойство пласта, не меняется от скважины к скважине или от суток к
-    суткам). Задаётся вручную (см. scripts/set_reservoir_density.py) и
-    используется при загрузке источников, которые дают объёмный дебит
+    oil_density_t_m3/water_density_t_m3 — плотности, справочные значения
+    по горизонту (свойство пласта, не меняется от скважины к скважине или
+    от суток к суткам). Задаются вручную (см. scripts/set_reservoir_density.py)
+    и используются при загрузке источников, которые дают объёмный дебит
     без своей плотности — перевести м3 в тонны тогда больше не из чего.
+
+    density_confirmed — плотности НЕ подтверждены по ФХИ, пока это False
+    (даже если проставлены дефолты 0.86/1.0 — см. daily_report_loader.py):
+    загрузчик суточных данных должен явно предупреждать, а не тихо
+    доверять дефолту.
     """
 
     __tablename__ = "reservoir"
@@ -47,6 +52,8 @@ class Reservoir(Base):
     name: Mapped[str] = mapped_column()
     horizon_code: Mapped[str | None] = mapped_column()
     oil_density_t_m3: Mapped[float | None] = mapped_column()
+    water_density_t_m3: Mapped[float | None] = mapped_column()
+    density_confirmed: Mapped[bool] = mapped_column(default=False)
 
 
 class Well(Base):

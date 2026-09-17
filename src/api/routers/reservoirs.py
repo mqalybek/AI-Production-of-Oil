@@ -36,6 +36,11 @@ def update_reservoir_density(
     reservoir = db.get(Reservoir, reservoir_id)
     if reservoir is None:
         raise HTTPException(status_code=404, detail=f"объект/горизонт {reservoir_id} не найден")
-    reservoir.oil_density_t_m3 = body.oil_density_t_m3
+    if body.oil_density_t_m3 is not None:
+        reservoir.oil_density_t_m3 = body.oil_density_t_m3
+    if body.water_density_t_m3 is not None:
+        reservoir.water_density_t_m3 = body.water_density_t_m3
+    if body.density_confirmed is not None:
+        reservoir.density_confirmed = body.density_confirmed
     db.flush()
     return reservoir
