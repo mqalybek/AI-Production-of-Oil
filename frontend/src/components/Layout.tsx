@@ -7,6 +7,7 @@ const NAV_ITEMS = [
   { to: '/wells', label: 'Фонд скважин' },
   { to: '/losses', label: 'Анализ потерь' },
   { to: '/data-quality', label: 'Качество данных' },
+  { to: '/upload', label: 'Загрузка данных' },
 ]
 
 export function Layout() {

@@ -11,6 +11,7 @@ from src.api.routers import (
     data_quality,
     deferred,
     fields,
+    ingestion,
     monthly_production,
     production,
     reservoirs,
@@ -37,3 +38,4 @@ app.include_router(deferred.router)
 app.include_router(monthly_production.router)
 app.include_router(alerts.router)
 app.include_router(data_quality.router)
+app.include_router(ingestion.router)

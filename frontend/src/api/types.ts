@@ -175,6 +175,50 @@ export interface WellMonthlySummaryOut {
   months_count: number
 }
 
+export interface WellDayResultOut {
+  well_id: number
+  uwi: string | null
+  date: string
+  validation_status: string
+  errors: string[]
+  need_confirmation: boolean
+  need_confirmation_reasons: string[]
+  hours_on: number
+  ke: number | null
+  q_oil_t: number | null
+  q_liquid_t: number | null
+  q_water_m3: number | null
+  q_gas_m3: number | null
+  q_liquid_m3: number | null
+  gor_m3_t: number | null
+  allocation_method: string | null
+  confidence: string
+}
+
+export interface FieldDaySummaryOut {
+  date: string
+  wells_total: number
+  wells_active: number
+  wells_idle: number
+  wells_need_confirmation: number
+  q_oil_t: number
+  q_liquid_t: number
+  q_water_m3: number
+  q_gas_m3: number
+  weighted_water_cut_pct: number | null
+}
+
+export interface DailyReportUploadResult {
+  run_id: number
+  status: string
+  records_read: number
+  records_loaded: number
+  records_quarantined: number
+  error_message: string | null
+  field_summaries: FieldDaySummaryOut[]
+  attention: WellDayResultOut[]
+}
+
 export interface DataQualityMetrics {
   period_start: string
   period_end: string

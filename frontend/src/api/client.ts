@@ -59,3 +59,32 @@ export const api = {
   post: <T>(path: string, body?: unknown) =>
     request<T>(path, { method: 'POST', body: body ? JSON.stringify(body) : undefined }),
 }
+
+// Отдельно от api.post: файл идёт как multipart/form-data, Content-Type
+// (с boundary) браузер должен выставить сам — нельзя жёстко задавать
+// 'application/json', как это делает обычный request().
+export async function uploadFile<T>(
+  path: string,
+  file: File,
+  params: Record<string, string | number | undefined> = {},
+): Promise<T> {
+  const token = getToken()
+  const headers = new Headers()
+  if (token) headers.set('Authorization', `Bearer ${token}`)
+
+  const formData = new FormData()
+  formData.append('file', file)
+
+  const resp = await fetch(`${path}${qs(params)}`, { method: 'POST', headers, body: formData })
+
+  if (resp.status === 401) {
+    clearToken()
+    window.location.href = '/login'
+    throw new ApiError(401, 'Сессия истекла, нужно войти заново')
+  }
+  if (!resp.ok) {
+    const body = await resp.json().catch(() => ({}))
+    throw new ApiError(resp.status, body.detail ?? `Ошибка запроса: ${resp.status}`)
+  }
+  return resp.json() as Promise<T>
+}
