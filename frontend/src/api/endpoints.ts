@@ -75,6 +75,10 @@ export function getDeferred(from: string, to: string, groupby: string, granulari
   return api.get<(DeferredAggregateItem | DeferredParetoItem)[]>('/api/deferred', { from, to, groupby, granularity })
 }
 
+export function getDeferredMonthly(from: string, to: string, groupby: string) {
+  return api.get<DeferredAggregateItem[]>('/api/deferred/monthly', { from, to, groupby })
+}
+
 export function getAlerts(params: { status?: string; severity?: string; limit?: number; offset?: number } = {}) {
   return api.get<Page<AlertOut>>('/api/alerts', params)
 }

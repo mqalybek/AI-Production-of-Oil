@@ -28,3 +28,15 @@
   grid-template-columns: 1fr 1fr;
   gap: 12px;
 }
+
+.loss-analysis__monthly-stats {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 10px;
+}
+
+.loss-analysis__note {
+  margin-top: 12px;
+  font-size: 12px;
+  color: var(--color-text-muted);
+}

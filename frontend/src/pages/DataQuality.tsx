@@ -27,7 +27,7 @@ export function DataQuality() {
         <span className="data-quality__period">по {to}</span>
       </div>
 
-      <Panel title="Метрики качества данных за период">
+      <Panel title="По замерам АГЗУ и суточным данным">
         <QueryState isLoading={dq.isLoading} error={dq.error}>
           {dq.data && (
             <div className="data-quality__grid">
@@ -47,6 +47,25 @@ export function DataQuality() {
                 label="Суток с низкой уверенностью аллокации"
                 value={String(dq.data.low_confidence_allocation_days)}
                 sub="material balance discrepancy proxy"
+              />
+            </div>
+          )}
+        </QueryState>
+      </Panel>
+
+      <Panel title="По помесячным данным">
+        <QueryState isLoading={dq.isLoading} error={dq.error}>
+          {dq.data && (
+            <div className="data-quality__grid">
+              <MetricCard
+                label="Скважины без отчёта за месяц"
+                value={String(dq.data.wells_without_recent_monthly_report)}
+                sub={`на конец периода (${dq.data.period_end})`}
+              />
+              <MetricCard
+                label="Аномалии отработанных дней"
+                value={String(dq.data.monthly_report_anomalies)}
+                sub="working_days > calendar_days"
               />
             </div>
           )}

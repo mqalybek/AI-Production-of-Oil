@@ -13,6 +13,7 @@ from src.api.cache import cache
 from src.api.deps import get_current_user, get_db
 from src.api.schemas.deferred import DeferredAggregateItem, DeferredParetoItem
 from src.calc.deferred_runner import aggregate_losses, pareto_by_reason
+from src.calc.monthly_loss_runner import aggregate_monthly_losses
 from src.domain.reference import DowntimeReason
 from src.ingestion.base import Period
 
@@ -53,6 +54,33 @@ def get_deferred(
         rows = cache.get_or_set(
             cache_key,
             lambda: aggregate_losses(db, period, group_by=groupby, time_bucket=granularity, well_ids=well_ids),
+        )
+    except ValueError as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
+
+    return [DeferredAggregateItem(**r) for r in rows]
+
+
+@router.get("/monthly", response_model=list[DeferredAggregateItem])
+def get_deferred_monthly(
+    from_: dt.date = Query(..., alias="from"),
+    to: dt.date = Query(...),
+    groupby: str = Query("well", description="well|node|reservoir|field"),
+    well: int | None = Query(None, description="ограничить одной скважиной (карточка скважины)"),
+    db: Session = Depends(get_db),
+):
+    """Оценка потерь от простоя по помесячным данным (working_days vs
+    calendar_days) — для месторождений без суточных замеров АГЗУ, где
+    /api/deferred (посуточная модель) посчитать нечего. Одна категория —
+    downtime, без Парето по причинам (см. src/calc/monthly_loss.py)."""
+    period = Period(from_, to)
+    well_ids = [well] if well is not None else None
+    cache_key = f"deferred-monthly:{from_}:{to}:{groupby}:{well}"
+
+    try:
+        rows = cache.get_or_set(
+            cache_key,
+            lambda: aggregate_monthly_losses(db, period, group_by=groupby, well_ids=well_ids),
         )
     except ValueError as exc:
         raise HTTPException(status_code=422, detail=str(exc)) from exc
