@@ -13,3 +13,5 @@ class DataQualityMetrics(BaseModel):
     valid_tests: int
     wells_without_recent_test: int
     low_confidence_allocation_days: int
+    wells_without_recent_monthly_report: int
+    monthly_report_anomalies: int

@@ -227,4 +227,6 @@ export interface DataQualityMetrics {
   valid_tests: number
   wells_without_recent_test: number
   low_confidence_allocation_days: number
+  wells_without_recent_monthly_report: number
+  monthly_report_anomalies: number
 }

@@ -1,5 +1,6 @@
 import datetime as dt
 
+from src.domain.monthly_production import MonthlyProduction
 from src.domain.reference import DowntimeReason
 from src.domain.timeseries import DeferredProduction
 
@@ -75,3 +76,25 @@ def test_deferred_pareto_by_reason(client, auth_headers, db_session, make_well):
     body = resp.json()
     assert body[0]["reason_name"] == "Отказ насоса"
     assert body[0]["cumulative_pct"] == 100.0
+
+
+def test_deferred_monthly_estimates_idle_loss(client, auth_headers, db_session, make_well):
+    well = make_well()
+    db_session.add(
+        MonthlyProduction(
+            well_id=well.id, period_month=dt.date(2024, 6, 1), calendar_days=30, working_days=25,
+            q_oil_t=200.0, q_water_t=0.0, q_liquid_t=200.0, q_oil_rate_t_d=8.0, source="test",
+        )
+    )
+    db_session.flush()
+
+    resp = client.get(
+        "/api/deferred/monthly", params={"from": "2024-06-01", "to": "2024-06-30", "groupby": "well"},
+        headers=auth_headers,
+    )
+    assert resp.status_code == 200
+    body = resp.json()
+    assert len(body) == 1
+    assert body[0]["group"] == well.id
+    assert body[0]["category"] == "downtime"
+    assert body[0]["volume_oil_t"] == 40.0

@@ -14,6 +14,7 @@ from src.api.deps import get_current_user, get_db
 from src.api.schemas.data_quality import DataQualityMetrics
 from src.domain.ingestion_log import IngestionQuarantine, IngestionRun
 from src.domain.master_data import Well
+from src.domain.monthly_production import MonthlyProduction
 from src.domain.timeseries import DailyProduction, WellTest
 
 router = APIRouter(prefix="/api/data-quality", tags=["data-quality"], dependencies=[Depends(get_current_user)])
@@ -66,6 +67,24 @@ def _compute(db: Session, from_: dt.date, to: dt.date) -> DataQualityMetrics:
         )
     ).scalar_one()
 
+    # последний месяц периода — тот, что "должен быть" отчитан к моменту `to`
+    last_period_month = to.replace(day=1)
+    reported_well_ids = set(
+        db.execute(
+            select(MonthlyProduction.well_id.distinct()).where(
+                MonthlyProduction.period_month == last_period_month
+            )
+        ).scalars().all()
+    )
+    wells_without_recent_monthly_report = len(active_well_ids - reported_well_ids)
+
+    monthly_report_anomalies = db.execute(
+        select(func.count()).select_from(MonthlyProduction).where(
+            MonthlyProduction.period_month.between(from_.replace(day=1), last_period_month),
+            MonthlyProduction.working_days > MonthlyProduction.calendar_days,
+        )
+    ).scalar_one()
+
     return DataQualityMetrics(
         period_start=from_,
         period_end=to,
@@ -74,4 +93,6 @@ def _compute(db: Session, from_: dt.date, to: dt.date) -> DataQualityMetrics:
         valid_tests=valid_tests,
         wells_without_recent_test=wells_without_recent_test,
         low_confidence_allocation_days=low_confidence_days,
+        wells_without_recent_monthly_report=wells_without_recent_monthly_report,
+        monthly_report_anomalies=monthly_report_anomalies,
     )
