@@ -1,7 +1,8 @@
-import { api } from './client'
+import { api, uploadFile } from './client'
 import type {
   AlertOut,
   DailyFieldSummary,
+  DailyReportUploadResult,
   DataQualityMetrics,
   DeferredAggregateItem,
   DeferredParetoItem,
@@ -84,4 +85,12 @@ export function acknowledgeAlert(id: number, comment?: string) {
 
 export function getDataQuality(from: string, to: string) {
   return api.get<DataQualityMetrics>('/api/data-quality', { from, to })
+}
+
+export function getDailyReportMappings() {
+  return api.get<string[]>('/api/ingestion/daily-report/mappings')
+}
+
+export function uploadDailyReport(file: File, mapping: string) {
+  return uploadFile<DailyReportUploadResult>('/api/ingestion/daily-report', file, { mapping })
 }

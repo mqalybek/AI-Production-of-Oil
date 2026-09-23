@@ -1,6 +1,7 @@
 import { Navigate, Route, Routes } from 'react-router-dom'
 import { Layout } from './components/Layout'
 import { DataQuality } from './pages/DataQuality'
+import { DataUpload } from './pages/DataUpload'
 import { Login } from './pages/Login'
 import { LossAnalysis } from './pages/LossAnalysis'
 import { MorningSummary } from './pages/MorningSummary'
@@ -24,6 +25,7 @@ function App() {
         <Route path="/wells/:uwi" element={<WellCardPage />} />
         <Route path="/losses" element={<LossAnalysis />} />
         <Route path="/data-quality" element={<DataQuality />} />
+        <Route path="/upload" element={<DataUpload />} />
       </Route>
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
