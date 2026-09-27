@@ -59,3 +59,31 @@ def test_data_quality_counts_monthly_report_anomalies(client, auth_headers, db_s
     )
     assert resp.status_code == 200
     assert resp.json()["monthly_report_anomalies"] == 1
+
+
+def test_last_closed_month():
+    from src.api.routers.data_quality import last_closed_month
+
+    assert last_closed_month(dt.date(2026, 9, 27)) == dt.date(2026, 8, 1)
+    assert last_closed_month(dt.date(2024, 6, 30)) == dt.date(2024, 6, 1)
+    assert last_closed_month(dt.date(2024, 1, 10)) == dt.date(2023, 12, 1)
+
+
+def test_mid_month_period_checks_previous_closed_month(client, auth_headers, db_session, make_well):
+    reported_well = make_well()
+    make_well()  # без отчёта за июнь
+    db_session.add(
+        MonthlyProduction(
+            well_id=reported_well.id, period_month=dt.date(2024, 6, 1), calendar_days=30, working_days=30,
+            q_oil_t=200.0, q_water_t=0.0, q_liquid_t=200.0, source="test",
+        )
+    )
+    db_session.flush()
+
+    # середина июля: июльских отчётов ещё быть не может — проверяется июнь
+    resp = client.get(
+        "/api/data-quality", params={"from": "2024-07-01", "to": "2024-07-15"}, headers=auth_headers
+    )
+    body = resp.json()
+    assert body["monthly_report_month"] == "2024-06-01"
+    assert body["wells_without_recent_monthly_report"] == 1

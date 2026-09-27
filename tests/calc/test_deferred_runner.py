@@ -8,7 +8,7 @@ from sqlalchemy import select
 
 from src.calc.deferred_runner import aggregate_losses, pareto_by_reason, run_period
 from src.domain.master_data import Well
-from src.domain.timeseries import DeferredProduction
+from src.domain.timeseries import DeferredProduction, Downtime
 from src.ingestion.base import Period
 
 
@@ -22,7 +22,9 @@ def test_run_period_produces_report(db_session, synthetic_dataset):
 
     assert report.well_days_processed > 0
     assert report.total_loss_oil_t >= 0
-    assert set(report.by_category).issubset({"downtime", "rate_reduction", "watering", "idle_fund"})
+    assert set(report.by_category).issubset(
+        {"downtime", "planned_downtime", "rate_reduction", "watering", "idle_fund"}
+    )
 
 
 def test_run_period_writes_downtime_rows_with_reasons(db_session, synthetic_dataset):
@@ -43,10 +45,33 @@ def test_run_period_non_downtime_rows_have_no_reason(db_session, synthetic_datas
     run_period(db_session, _full_period(cfg))
 
     rows = db_session.execute(
-        select(DeferredProduction).where(DeferredProduction.category != "downtime")
+        select(DeferredProduction).where(DeferredProduction.category.not_in(("downtime", "planned_downtime")))
     ).scalars().all()
     assert rows
     assert all(r.reason_id is None for r in rows)
+
+
+def test_run_period_separates_planned_downtime(db_session, synthetic_dataset):
+    """Простой с is_planned=True должен лечь отдельной категорией, а не
+    смешаться с аварийными. Плановых ТРС в маленькой фикстуре может не
+    выпасть (~0.6 события на весь набор), поэтому помечаем один простой сами."""
+    cfg, tables = synthetic_dataset
+    downtime = db_session.execute(select(Downtime).order_by(Downtime.id)).scalars().first()
+    downtime.is_planned = True
+    db_session.flush()
+
+    report = run_period(db_session, _full_period(cfg), well_ids=[downtime.well_id])
+
+    planned_rows = db_session.execute(
+        select(DeferredProduction).where(DeferredProduction.category == "planned_downtime")
+    ).scalars().all()
+    assert planned_rows
+    assert all(r.reason_id == downtime.reason_id for r in planned_rows)
+    assert report.by_category.get("planned_downtime", 0) > 0
+
+    pareto = pareto_by_reason(db_session, _full_period(cfg), well_ids=[downtime.well_id])
+    assert all(p["category"] != "planned_downtime" for p in pareto)
+    assert pareto[-1]["cumulative_pct"] == 100.0
 
 
 def test_aggregate_losses_by_field_month(db_session, synthetic_dataset):

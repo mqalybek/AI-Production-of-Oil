@@ -226,11 +226,11 @@ class DeferredProduction(Base):
     __tablename__ = "deferred_production"
     __table_args__ = (
         CheckConstraint(
-            "category IN ('downtime', 'rate_reduction', 'watering', 'idle_fund')",
+            "category IN ('downtime', 'planned_downtime', 'rate_reduction', 'watering', 'idle_fund')",
             name="ck_deferred_production_category",
         ),
         CheckConstraint(
-            "(category = 'downtime') = (reason_id IS NOT NULL)",
+            "(category IN ('downtime', 'planned_downtime')) = (reason_id IS NOT NULL)",
             name="ck_deferred_production_reason_matches_category",
         ),
         CheckConstraint("volume_oil_t >= 0", name="ck_deferred_production_volume_nonneg"),

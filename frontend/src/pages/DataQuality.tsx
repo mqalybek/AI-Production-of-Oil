@@ -60,7 +60,7 @@ export function DataQuality() {
               <MetricCard
                 label="Скважины без отчёта за месяц"
                 value={String(dq.data.wells_without_recent_monthly_report)}
-                sub={`на конец периода (${dq.data.period_end})`}
+                sub={`за ${dq.data.monthly_report_month.slice(0, 7)} (последний закрытый месяц)`}
               />
               <MetricCard
                 label="Аномалии отработанных дней"

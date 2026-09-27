@@ -9,9 +9,10 @@ src/calc/deferred.py — та модель требует well_test/downtime, к
 месячного отчёта не фиксируется, разложение как в deferred.py тут
 невозможно и не нужно.
 
-Если working_days == 0 (скважина простояла весь месяц) — дебита посчитать
-не из чего, потери не оцениваем (не гадаем на пустом месте), строка просто
-не попадает в отчёт.
+Если working_days == 0 (скважина простояла весь месяц), своего дебита у
+месяца нет — берём дебит последнего рабочего месяца (fallback_rate_t_d,
+его подбирает раннер с ограничением по давности). Нет и его — потери не
+оцениваем, а не гадаем на пустом месте.
 
 Чистая математика — без обращения к БД (тестируется без сессии). Сборку
 входных данных из БД делает src/calc/monthly_loss_runner.py.
@@ -30,6 +31,7 @@ class MonthlyLossInput:
     calendar_days: int
     working_days: int
     q_oil_rate_t_d: float | None
+    fallback_rate_t_d: float | None = None  # дебит последнего рабочего месяца
 
 
 @dataclass
@@ -42,11 +44,15 @@ class MonthlyLossLine:
 
 def compute_month_loss(row: MonthlyLossInput) -> MonthlyLossLine | None:
     idle_days = row.calendar_days - row.working_days
-    if idle_days <= 0 or row.q_oil_rate_t_d is None:
+    if idle_days <= 0:
+        return None
+    own_rate = row.q_oil_rate_t_d if row.working_days > 0 else None
+    rate = own_rate if own_rate is not None else row.fallback_rate_t_d
+    if rate is None:
         return None
     return MonthlyLossLine(
         well_id=row.well_id,
         period_month=row.period_month,
         idle_days=idle_days,
-        volume_oil_t=round(row.q_oil_rate_t_d * idle_days, 2),
+        volume_oil_t=round(rate * idle_days, 2),
     )

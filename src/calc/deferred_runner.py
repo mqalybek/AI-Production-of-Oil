@@ -70,15 +70,18 @@ def _downtime_intervals(session: Session, well_id: int, on_date: dt.date) -> lis
     lower = dt.datetime.combine(on_date, dt.time.min, tzinfo=dt.timezone.utc)
     upper = dt.datetime.combine(on_date, dt.time.max, tzinfo=dt.timezone.utc)
     rows = session.execute(
-        select(Downtime.reason_id, Downtime.ts_start, Downtime.ts_end).where(
+        select(Downtime.reason_id, Downtime.is_planned, Downtime.ts_start, Downtime.ts_end).where(
             Downtime.well_id == well_id, Downtime.ts_start < upper, Downtime.ts_end > lower
         )
     ).all()
-    by_reason: dict[int, float] = defaultdict(float)
-    for reason_id, ts_start, ts_end in rows:
+    by_reason: dict[tuple[int, bool], float] = defaultdict(float)
+    for reason_id, is_planned, ts_start, ts_end in rows:
         overlap_hours = (min(ts_end, upper) - max(ts_start, lower)).total_seconds() / 3600
-        by_reason[reason_id] += max(0.0, overlap_hours)
-    return [DowntimeInterval(reason_id=r, hours=min(24.0, h)) for r, h in by_reason.items()]
+        by_reason[(reason_id, bool(is_planned))] += max(0.0, overlap_hours)
+    return [
+        DowntimeInterval(reason_id=r, hours=min(24.0, h), is_planned=planned)
+        for (r, planned), h in by_reason.items()
+    ]
 
 
 def _resolve_potential(session: Session, well_id: int, on_date: dt.date, cfg: dict):
@@ -293,12 +296,16 @@ def aggregate_losses(
 
 def pareto_by_reason(session: Session, period: Period, well_ids: list[int] | None = None) -> list[dict]:
     """Парето по причинам потерь: category + reason_id, отсортировано по
-    убыванию объёма, с накопленной долей."""
+    убыванию объёма, с накопленной долей. Плановые простои сюда не входят —
+    это не потери, а запланированный недобор, в отчётности отдельная строка."""
     q = select(
         DeferredProduction.category,
         DeferredProduction.reason_id,
         func.sum(DeferredProduction.volume_oil_t).label("total"),
-    ).where(DeferredProduction.date.between(period.start, period.end))
+    ).where(
+        DeferredProduction.date.between(period.start, period.end),
+        DeferredProduction.category != "planned_downtime",
+    )
     if well_ids:
         q = q.where(DeferredProduction.well_id.in_(well_ids))
     q = q.group_by(DeferredProduction.category, DeferredProduction.reason_id).order_by(
