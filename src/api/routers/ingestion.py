@@ -12,6 +12,7 @@ from fastapi import APIRouter, Depends, File, HTTPException, UploadFile
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
+from src.api.cache import cache
 from src.api.deps import get_current_user, get_db
 from src.api.schemas.ingestion import DailyReportUploadResult, FieldDaySummaryOut, WellDayResultOut
 from src.domain.master_data import Well
@@ -35,9 +36,9 @@ def upload_daily_report(
     mapping: str = "standard_ru",
     db: Session = Depends(get_db),
 ) -> DailyReportUploadResult:
-    mapping_path = MAPPINGS_DIR / f"{mapping}.yaml"
-    if not mapping_path.exists():
+    if mapping not in list_daily_report_mappings():
         raise HTTPException(status_code=400, detail=f"неизвестный формат маппинга: {mapping!r}")
+    mapping_path = MAPPINGS_DIR / f"{mapping}.yaml"
 
     suffix = Path(file.filename or "upload.csv").suffix or ".csv"
     with tempfile.NamedTemporaryFile(suffix=suffix, delete=False) as tmp:
@@ -51,6 +52,11 @@ def upload_daily_report(
         raise HTTPException(status_code=422, detail=f"не удалось разобрать файл: {exc}") from exc
     finally:
         tmp_path.unlink(missing_ok=True)
+
+    # коммит до сброса кэша: иначе параллельный запрос успел бы закэшировать
+    # агрегаты по ещё не закоммиченным (невидимым ему) данным
+    db.commit()
+    cache.clear()
 
     well_ids = {r.well_id for r in result.attention}
     uwi_by_id = (

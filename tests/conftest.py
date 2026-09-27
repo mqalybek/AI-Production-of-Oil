@@ -16,6 +16,8 @@ import pytest
 from sqlalchemy import create_engine, text
 from sqlalchemy.orm import Session, sessionmaker
 
+from src.domain.base import DB_CONNECT_ARGS
+
 REPO_ROOT = Path(__file__).resolve().parents[1]
 ADMIN_DB_URL = "postgresql+psycopg://monitoring:monitoring@localhost:5432/production_monitoring"
 TEST_DB_URL = (
@@ -27,8 +29,8 @@ TEST_DB_URL = (
 # allocation_method/confidence в daily_production, таблица
 # deferred_production, таблицы alert/alert_subscriber, api_user/production_plan,
 # monthly_production, reservoir.oil_density_t_m3/water_density_t_m3/
-# density_confirmed) — см. docstring выше.
-PRE_TIMESCALE_REVISION = "ee1a92606236"
+# density_confirmed, категория planned_downtime) — см. docstring выше.
+PRE_TIMESCALE_REVISION = "a3c9e1f4b7d2"
 
 
 def _run_alembic(*args: str) -> None:
@@ -66,7 +68,7 @@ def db_session():
     финальный transaction.rollback() в teardown ругался бы на то, что
     транзакция уже отсоединена от connection.
     """
-    engine = create_engine(TEST_DB_URL, future=True)
+    engine = create_engine(TEST_DB_URL, future=True, connect_args=DB_CONNECT_ARGS)
     connection = engine.connect()
     transaction = connection.begin()
     session_factory = sessionmaker(

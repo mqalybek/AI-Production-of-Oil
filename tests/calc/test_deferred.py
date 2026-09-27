@@ -145,6 +145,22 @@ def test_model_forecast_stub_always_none():
     assert potential_from_model_forecast(well_id=1, target_date=_d(0)) is None
 
 
+def test_planned_downtime_goes_to_separate_category():
+    potential = PotentialEstimate(q_liquid_rate=40.0, q_oil_rate=30.0, water_cut=0.25, basis="last_valid_test")
+    downtime = [
+        DowntimeInterval(reason_id=2, hours=6.0),                   # отказ ЭЦН
+        DowntimeInterval(reason_id=5, hours=6.0, is_planned=True),  # ППР
+    ]
+
+    lines = compute_day_losses(potential, hours_on=12.0, q_oil_actual=15.0, q_liquid_actual=20.0, downtime_intervals=downtime)
+
+    by_cat = {l.category: l for l in lines if l.category in ("downtime", "planned_downtime")}
+    assert by_cat["downtime"].reason_id == 2
+    assert by_cat["downtime"].volume_oil_t == pytest.approx(7.5)
+    assert by_cat["planned_downtime"].reason_id == 5
+    assert by_cat["planned_downtime"].volume_oil_t == pytest.approx(7.5)
+
+
 # --- сценарий 1: скважина стояла 12 часов -----------------------------------------
 
 

@@ -148,7 +148,10 @@ export function WellCardPage() {
     () => (losses.data ?? []).filter((l) => l.group === card.data?.id),
     [losses.data, card.data],
   )
-  const totalLoss = wellLosses.reduce((acc, l) => acc + l.volume_oil_t, 0)
+  // плановые простои — не потери, в итог не входят
+  const totalLoss = wellLosses
+    .filter((l) => l.category !== 'planned_downtime')
+    .reduce((acc, l) => acc + l.volume_oil_t, 0)
 
   const testColumns: Column<WellTestOut>[] = [
     { key: 'ts_start', header: 'Дата', render: (t) => formatDateTime(t.ts_start) },

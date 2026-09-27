@@ -23,6 +23,10 @@
   color: var(--color-text-muted);
 }
 
+.loss-analysis__planned {
+  color: var(--color-text-muted);
+}
+
 .loss-analysis__row {
   display: grid;
   grid-template-columns: 1fr 1fr;

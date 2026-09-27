@@ -86,11 +86,13 @@ class PotentialEstimate:
 class DowntimeInterval:
     reason_id: int
     hours: float
+    is_planned: bool = False
 
 
 @dataclass
 class DeferredLossLine:
-    category: str  # "downtime" | "rate_reduction" | "watering" | "idle_fund"
+    # "downtime" | "planned_downtime" | "rate_reduction" | "watering" | "idle_fund"
+    category: str
     reason_id: int | None
     volume_oil_t: float
     potential_basis: str
@@ -248,7 +250,10 @@ def compute_day_losses(
     for interval in downtime_intervals:
         loss = potential.q_oil_rate * (interval.hours / 24.0)
         if loss > 0:
-            lines.append(DeferredLossLine("downtime", interval.reason_id, round(loss, 4), potential.basis))
+            # плановый простой (ППР, плановый КРС) — отдельная строка, в отчётности
+            # он не смешивается с аварийными потерями
+            category = "planned_downtime" if interval.is_planned else "downtime"
+            lines.append(DeferredLossLine(category, interval.reason_id, round(loss, 4), potential.basis))
 
     q_liq_potential_on = potential.q_liquid_rate * (hours_on / 24.0)
     water_cut_actual = (

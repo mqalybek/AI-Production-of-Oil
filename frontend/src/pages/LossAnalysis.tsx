@@ -18,6 +18,8 @@ const GROUPBY_OPTIONS = [
   { value: 'field', label: 'По месторождениям' },
 ]
 
+const PLANNED = 'planned_downtime'
+
 const MODE_OPTIONS = [
   { value: 'daily', label: 'Сутки (АГЗУ)' },
   { value: 'monthly', label: 'Месяц (простой)' },
@@ -82,7 +84,7 @@ export function LossAnalysis() {
   const breakdownOption = useMemo(() => {
     const totals = new Map<number, number>()
     for (const r of breakdown.data ?? []) {
-      if (r.group === null) continue
+      if (r.group === null || r.category === PLANNED) continue
       totals.set(r.group, (totals.get(r.group) ?? 0) + r.volume_oil_t)
     }
     const top = [...totals.entries()].sort((a, b) => b[1] - a[1]).slice(0, 15)
@@ -97,7 +99,10 @@ export function LossAnalysis() {
 
   const dynamicsOption = useMemo(() => {
     const byDate = new Map<string, number>()
-    for (const r of dynamics.data ?? []) byDate.set(r.period, (byDate.get(r.period) ?? 0) + r.volume_oil_t)
+    for (const r of dynamics.data ?? []) {
+      if (r.category === PLANNED) continue
+      byDate.set(r.period, (byDate.get(r.period) ?? 0) + r.volume_oil_t)
+    }
     const dates = [...byDate.keys()].sort()
     return {
       grid: { left: 50, right: 16, top: 10, bottom: 24 },
@@ -118,6 +123,9 @@ export function LossAnalysis() {
     ? (breakdown.data ?? []).reduce((acc, r) => acc + r.volume_oil_t, 0)
     : (pareto.data ?? []).reduce((acc, r) => acc + r.volume_oil_t, 0)
   const affectedGroups = new Set((breakdown.data ?? []).filter((r) => r.group !== null).map((r) => r.group)).size
+  const plannedTotal = isMonthly
+    ? 0
+    : (dynamics.data ?? []).filter((r) => r.category === PLANNED).reduce((acc, r) => acc + r.volume_oil_t, 0)
 
   return (
     <div className="loss-analysis">
@@ -133,6 +141,11 @@ export function LossAnalysis() {
           ))}
         </select>
         <span className="loss-analysis__total">Итого потерь: {formatNumber(totalLoss)} т</span>
+        {plannedTotal > 0 && (
+          <span className="loss-analysis__planned">
+            + плановые простои {formatNumber(plannedTotal)} т (в потери не входят)
+          </span>
+        )}
       </div>
 
       <div className="loss-analysis__row">

@@ -29,6 +29,15 @@ def get_data_quality(
     return cache.get_or_set(f"data-quality:{from_}:{to}", lambda: _compute(db, from_, to))
 
 
+def last_closed_month(on: dt.date) -> dt.date:
+    """Первое число последнего месяца, целиком закончившегося к дате `on`
+    (включительно): 2026-09-27 -> 2026-08-01, 2024-06-30 -> 2024-06-01."""
+    next_day = on + dt.timedelta(days=1)
+    if next_day.month != on.month:
+        return on.replace(day=1)
+    return (on.replace(day=1) - dt.timedelta(days=1)).replace(day=1)
+
+
 def _compute(db: Session, from_: dt.date, to: dt.date) -> DataQualityMetrics:
     lower = dt.datetime.combine(from_, dt.time.min, tzinfo=dt.timezone.utc)
     upper = dt.datetime.combine(to, dt.time.max, tzinfo=dt.timezone.utc)
@@ -67,20 +76,20 @@ def _compute(db: Session, from_: dt.date, to: dt.date) -> DataQualityMetrics:
         )
     ).scalar_one()
 
-    # последний месяц периода — тот, что "должен быть" отчитан к моменту `to`
-    last_period_month = to.replace(day=1)
+    # Отчёт спрашиваем только за последний ЗАКРЫТЫЙ месяц (целиком лежащий
+    # внутри периода): за текущий месяц отчёта ещё физически нет, и проверка
+    # по нему флагует весь фонд.
+    closed_month = last_closed_month(to)
     reported_well_ids = set(
         db.execute(
-            select(MonthlyProduction.well_id.distinct()).where(
-                MonthlyProduction.period_month == last_period_month
-            )
+            select(MonthlyProduction.well_id.distinct()).where(MonthlyProduction.period_month == closed_month)
         ).scalars().all()
     )
     wells_without_recent_monthly_report = len(active_well_ids - reported_well_ids)
 
     monthly_report_anomalies = db.execute(
         select(func.count()).select_from(MonthlyProduction).where(
-            MonthlyProduction.period_month.between(from_.replace(day=1), last_period_month),
+            MonthlyProduction.period_month.between(from_.replace(day=1), to.replace(day=1)),
             MonthlyProduction.working_days > MonthlyProduction.calendar_days,
         )
     ).scalar_one()
@@ -93,6 +102,7 @@ def _compute(db: Session, from_: dt.date, to: dt.date) -> DataQualityMetrics:
         valid_tests=valid_tests,
         wells_without_recent_test=wells_without_recent_test,
         low_confidence_allocation_days=low_confidence_days,
+        monthly_report_month=closed_month,
         wells_without_recent_monthly_report=wells_without_recent_monthly_report,
         monthly_report_anomalies=monthly_report_anomalies,
     )
